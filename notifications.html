@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Notifications</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo">
+        <a href="index.html">SocialPortfolio</a>
+    </div>
+    <div class="auth">
+        <button onclick="window.location.href='profile.html'">Profile</button>
+    </div>
+</header>
+
+<main class="content">
+    <h2>Notifications</h2>
+    <ul id="notificationList"></ul>
+</main>
+
+<script>
+const token = localStorage.getItem("token");
+
+if (!token) {
+    window.location.href = "login.html";
+}
+
+async function loadNotifications() {
+    const res = await fetch("http://localhost:5000/notifications", {
+        headers: { Authorization: "Bearer " + token }
+    });
+
+    const data = await res.json();
+    if (!data.success) return;
+
+    const list = document.getElementById("notificationList");
+    list.innerHTML = "";
+
+    if (data.notifications.length === 0) {
+        list.innerHTML = "<li>No notifications</li>";
+        return;
+    }
+
+    data.notifications.forEach(n => {
+        const li = document.createElement("li");
+        li.style.marginBottom = "10px";
+
+        const text = document.createElement("span");
+        text.innerText = `${n.from.username} ${n.message}`;
+        if (!n.isRead) text.style.fontWeight = "bold";
+
+        li.appendChild(text);
+
+        // 👉 CONNECTION REQUEST ACTIONS
+        if (n.type === "connection_request") {
+            const acceptBtn = document.createElement("button");
+            acceptBtn.innerText = "Accept";
+
+            const rejectBtn = document.createElement("button");
+            rejectBtn.innerText = "Reject";
+
+            acceptBtn.onclick = () => handleAccept(n.from._id, n._id);
+            rejectBtn.onclick = () => handleReject(n.from._id, n._id);
+
+            li.appendChild(document.createElement("br"));
+            li.appendChild(acceptBtn);
+            li.appendChild(rejectBtn);
+        }
+        else {
+            const deleteBtn = document.createElement("button");
+            deleteBtn.innerText = "Delete";
+
+            deleteBtn.onclick = () => deleteNotification(n._id, loadNotifications);
+
+            li.appendChild(document.createElement("br"));
+            li.appendChild(deleteBtn);
+        }
+
+        list.appendChild(li);
+    });
+
+    markNotificationsRead();
+}
+
+function handleAccept(userId, notificationId) {
+    deleteNotification(notificationId, () => {
+        fetch(`http://localhost:5000/connections/accept/${userId}`, {
+            method: "POST",
+            headers: { Authorization: "Bearer " + token }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert("Connection accepted");
+                loadNotifications();
+            }
+        });
+    });
+}
+
+
+function handleReject(userId, notificationId) {
+    deleteNotification(notificationId, () => {
+        fetch(`http://localhost:5000/connections/reject/${userId}`, {
+            method: "POST",
+            headers: { Authorization: "Bearer " + token }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert("Connection rejected");
+                loadNotifications();
+            }
+        });
+    });
+}
+
+
+function markNotificationsRead() {
+    fetch("http://localhost:5000/notifications/read", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token }
+    });
+}
+
+function deleteNotification(notificationId, callback) {
+    fetch(`http://localhost:5000/notifications/${notificationId}`, {
+        method: "DELETE",
+        headers: { Authorization: "Bearer " + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && callback) {
+            callback();
+        }
+    });
+}
+
+
+loadNotifications();
+</script>
+
+</body>
+</html>

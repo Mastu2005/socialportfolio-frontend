@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Profile</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="logo">
+            <a href="index.html">SocialPortfolio</a>
+        </div>
+
+        <div class="auth">
+            <button id="notificationBtn">Notifications</button>
+            <button id="deleteAccountBtn" style="color:red;">
+                Delete Account
+            </button>
+
+            <button id="logoutBtn">Logout</button>
+        </div>
+    </header>
+
+    <main class="content">
+        <h2>My Profile</h2>
+        <p>Username: <strong id="username">Loading...</strong></p>
+        <p>
+            <strong>Connections:</strong>
+            <span id="connectionsCount">0</span>
+        </p>
+
+        <p>
+            <strong>Likes:</strong>
+            <span id="likesCount">0</span>
+            
+        </p>
+        <h3>My Connections</h3>
+        <ul id="connectionsList"></ul>
+
+    </main>
+
+    <script>
+        document.getElementById("notificationBtn").onclick = () => {
+            window.location.href = "notifications.html";
+        };
+
+        const token = localStorage.getItem("token");
+        // route protection
+        if (!token) {
+            window.location.href = "login.html";
+        }
+
+        // fetch current user
+        fetch("http://localhost:5000/me", {
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                throw new Error("Auth failed");
+            }
+
+            const user = data.user;
+
+            // set username
+            document.getElementById("username").innerText =
+                "@" + user.username;
+
+            // counts
+            document.getElementById("connectionsCount").innerText =
+                user.connections.length;
+
+            document.getElementById("likesCount").innerText =
+                user.likes.length;
+
+            // connections list
+            const connectionsList = document.getElementById("connectionsList");
+            connectionsList.innerHTML = "";
+
+            if (user.connections.length === 0) {
+                connectionsList.innerHTML = "<li>No connections yet</li>";
+            } else {
+                user.connections.forEach(conn => {
+                    const li = document.createElement("li");
+
+                    const name = document.createElement("h3");
+                    name.innerText = conn.username;
+
+                    const viewBtn = document.createElement("button");
+                    viewBtn.innerText = "View Profile";
+
+                    viewBtn.addEventListener("click", () => {
+                        window.location.href = `user.html?id=${conn._id}`;
+                    });
+
+                    li.appendChild(name);
+                    li.appendChild(viewBtn);
+                    connectionsList.appendChild(li);
+                });
+
+            }
+        })
+        .catch(() => {
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+        });
+
+        // logout
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+            localStorage.removeItem("token");
+            window.location.href = "index.html";
+
+        });
+
+        //delete account
+        const deleteBtn = document.getElementById("deleteAccountBtn");
+
+        deleteBtn.addEventListener("click", () => {
+            const confirmDelete = confirm(
+                "This will permanently delete your account. This action cannot be undone. Continue?"
+            );
+
+            if (!confirmDelete) return;
+
+            fetch("http://localhost:5000/me", {
+                method: "DELETE",
+                headers: {
+                    Authorization: "Bearer " + localStorage.getItem("token")
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Account deleted successfully");
+                    localStorage.removeItem("token");
+                    window.location.href = "index.html";
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(() => {
+                alert("Something went wrong.");
+            });
+        });
+
+    </script>
+
+</body>
+</html>

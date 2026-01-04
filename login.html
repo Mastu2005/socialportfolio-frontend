@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Social Portfolio</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="content">
+        <h2>Login</h2>
+
+        <input type="text" placeholder="Username" id="username"><br><br>
+        <input type="password" placeholder="Password" id="password"><br><br>
+
+        <button id="loginSubmit">Login</button>
+        <p>
+            New user?
+            <a href="signup.html">Sign Up</a>
+        </p>
+    </div>
+
+    <script>
+        if(localStorage.getItem("isLoggedIn")==="true"){
+            window.location.href = "profile.html";
+        }
+        const loginBtn = document.getElementById("loginSubmit");
+
+        loginBtn.addEventListener("click", async () => {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            try{
+                const response = await fetch("http://localhost:5000/login", {
+                    method: "POST", 
+                    headers: {
+                        "Content-Type":"application/json"
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password
+                    })
+                });
+
+                const data= await response.json();
+
+                if(data.success){
+                    
+                    localStorage.setItem("token", data.token);
+                    localStorage.setItem("username", data.username);
+                    window.location.href = "index.html";
+                    console.log("success");
+                }else{
+                    alert(data.message);
+                }
+            } catch(error){
+                alert("Server error");
+                console.log(error);
+            }
+
+
+        });
+    </script>
+
+</body>
+</html>

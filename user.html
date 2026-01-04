@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="logo">
+            <a href="index.html">SocialPortfolio</a>
+        </div>
+
+        <div class="auth">
+            <button id="notificationBtn">Notifications</button>
+            <button id="loginBtn">Login</button>
+        </div>
+    </header>
+
+    <main class="content">
+        <h2 id="username">Loading...</h2>
+
+        <p>
+            <strong>Connections:</strong>
+            <span id="connectionsCount">0</span>
+        </p>
+
+        <p>
+            <strong>Likes:</strong>
+            <span id="likesCount">0</span>
+            <button id="likeBtn" style="display:none; margin-left:8px;">
+                Like
+            </button>
+
+        </p>
+
+        <button id="connectBtn" style="display:none;">
+            Connect
+        </button>
+        <p id="connectionStatus" style="margin-top:10px;"></p>
+
+
+    </main>
+
+    <script>
+        document.getElementById("notificationBtn").onclick = () => {
+            window.location.href = "notifications.html";
+        };
+        const loginBtn = document.getElementById("loginBtn");
+        const connectBtn = document.getElementById("connectBtn");
+        const likeBtn = document.getElementById("likeBtn");
+        const statusText = document.getElementById("connectionStatus");
+
+        const token = localStorage.getItem("token");
+
+        loginBtn.innerText = token ? "Profile" : "Login";
+        loginBtn.onclick = () => {
+            window.location.href = token ? "profile.html" : "login.html";
+        };
+
+        const params = new URLSearchParams(window.location.search);
+        const userId = params.get("id");
+
+        if (!userId) {
+            alert("No user selected");
+        }
+
+        /* =====================
+        STATE
+        ===================== */
+        let isLiked = false;
+        let connectionState = "none"; 
+        // possible values: none | sent | connected
+
+        /* =====================
+        MAIN LOAD FUNCTION
+        ===================== */
+        async function loadProfile() {
+            try {
+                // 1️⃣ PUBLIC PROFILE
+                const userRes = await fetch(`http://localhost:5000/users/${userId}`);
+                const userData = await userRes.json();
+                if (!userData.success) throw new Error();
+
+                const user = userData.user;
+                const targetUserLikes = user.likes.map(u => u._id);
+
+                document.getElementById("username").innerText = "@" + user.username;
+                document.getElementById("connectionsCount").innerText = user.connections.length;
+                document.getElementById("likesCount").innerText = user.likes.length;
+
+                // RESET UI
+                connectBtn.style.display = "none";
+                connectBtn.disabled = false;
+                likeBtn.style.display = "none";
+                likeBtn.disabled = false;
+                statusText.innerText = "";
+
+                /* =====================
+                NOT LOGGED IN
+                ===================== */
+                if (!token) {
+                    connectBtn.style.display = "inline-block";
+                    connectBtn.innerText = "Connect";
+                    statusText.innerText = "Login to connect";
+                    connectBtn.onclick = () => window.location.href = "login.html";
+
+                    likeBtn.style.display = "inline-block";
+                    likeBtn.innerText = "Like";
+                    return;
+                }
+
+                /* =====================
+                FETCH ME
+                ===================== */
+                const meRes = await fetch("http://localhost:5000/me", {
+                    headers: { Authorization: "Bearer " + token }
+                });
+                const meData = await meRes.json();
+                if (!meData.success) throw new Error();
+
+                const me = meData.user;
+                const myId = me._id;
+
+                /* =====================
+                LIKE STATUS
+                ===================== */
+                isLiked = targetUserLikes.includes(myId);
+                likeBtn.style.display = "inline-block";
+                likeBtn.innerText = isLiked ? "Liked" : "Like";
+
+                /* =====================
+                CONNECTION STATUS
+                ===================== */
+                const isConnected = me.connections.some(u => u._id === userId);
+                const requestSent = me.sentConnectionRequests.some(u => u._id === userId);
+                const requestReceived = me.connectionRequests.some(u => u._id === userId);
+
+                if (isConnected) {
+                    connectionState = "connected";
+                    connectBtn.style.display = "inline-block";
+                    connectBtn.innerText = "Disconnect";
+                    statusText.innerText = "Connected";
+                }
+                else if (requestSent) {
+                    connectionState = "sent";
+                    statusText.innerText = "Connection request sent";
+                    connectBtn.style.display = "inline-block";
+                    connectBtn.innerText = "Cancel";
+                }
+                else if (requestReceived) {
+                    connectionState = "received";
+                    statusText.innerText = "This user sent you a connection request. Respond from your profile.";
+                    connectBtn.style.display = "inline-block";
+                    connectBtn.innerText = "Request Received";
+                    connectBtn.disabled = true;
+                }
+                else {
+                    connectionState = "none";
+                    connectBtn.style.display = "inline-block";
+                    connectBtn.innerText = "Connect";
+                    statusText.innerText = "Not connected";
+                }
+
+            } catch (err) {
+                alert("Failed to load profile");
+            }
+        }
+
+        /* =====================
+        BUTTON HANDLERS (ONCE)
+        ===================== */
+        likeBtn.addEventListener("click", () => {
+            if (!token) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            isLiked ? sendUnlike() : sendLike();
+        });
+
+        connectBtn.addEventListener("click", () => {
+            if (!token) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            if (connectionState === "none") {
+                sendConnectionRequest();
+            }
+            else if (connectionState === "sent") {
+                cancelConnectionRequest();
+            }
+            else if (connectionState === "connected") {
+                disconnectUser();
+            }
+        });
+
+
+        /* =====================
+        API ACTIONS
+        ===================== */
+        function sendLike() {
+            likeBtn.disabled = true;
+
+            fetch(`http://localhost:5000/like/${userId}`, {
+                method: "POST",
+                headers: { Authorization: "Bearer " + token }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    isLiked = true;
+                    likeBtn.innerText = "Liked";
+                    document.getElementById("likesCount").innerText =
+                        parseInt(document.getElementById("likesCount").innerText) + 1;
+                }
+                likeBtn.disabled = false;
+            });
+        }
+
+        function sendUnlike() {
+            likeBtn.disabled = true;
+
+            fetch(`http://localhost:5000/unlike/${userId}`, {
+                method: "POST",
+                headers: { Authorization: "Bearer " + token }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    isLiked = false;
+                    likeBtn.innerText = "Like";
+                    document.getElementById("likesCount").innerText =
+                        Math.max(0, parseInt(document.getElementById("likesCount").innerText) - 1);
+                }
+                likeBtn.disabled = false;
+            });
+        }
+
+        function sendConnectionRequest() {
+            connectBtn.disabled = true;
+            fetch(`http://localhost:5000/connections/request/${userId}`, {
+                method: "POST",
+                headers: { Authorization: "Bearer " + token }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    connectionState = "sent";
+                    connectBtn.innerText = "Cancel";
+                    statusText.innerText = "Connection request sent";
+                }
+                connectBtn.disabled = false;
+            });
+        }
+
+        function cancelConnectionRequest() {
+            connectBtn.disabled = true;
+
+            fetch(`http://localhost:5000/connections/cancel/${userId}`, {
+                method: "POST",
+                headers: { Authorization: "Bearer " + token }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    connectionState = "none";
+                    connectBtn.innerText = "Connect";
+                    statusText.innerText = "Not connected";
+                }
+                connectBtn.disabled = false;
+            });
+        }
+
+        function disconnectUser() {
+            connectBtn.disabled = true;
+
+            fetch(`http://localhost:5000/connections/disconnect/${userId}`, {
+                method: "POST",
+                headers: { Authorization: "Bearer " + token }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    connectionState = "none";
+                    connectBtn.innerText = "Connect";
+                    statusText.innerText = "Disconnected";
+                }
+                connectBtn.disabled = false;
+            });
+        }
+
+
+        /* =====================
+        START
+        ===================== */
+        loadProfile();
+    </script>
+
+
+
+</body>
+</html>
