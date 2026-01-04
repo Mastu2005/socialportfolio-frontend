@@ -29,7 +29,7 @@ if (!token) {
 }
 
 async function loadNotifications() {
-    const res = await fetch("http://localhost:5000/notifications", {
+    const res = await fetch("http://socialportfolio-backend.onrender.com/notifications", {
         headers: { Authorization: "Bearer " + token }
     });
 
@@ -87,7 +87,7 @@ async function loadNotifications() {
 
 function handleAccept(userId, notificationId) {
     deleteNotification(notificationId, () => {
-        fetch(`http://localhost:5000/connections/accept/${userId}`, {
+        fetch(`http://socialportfolio-backend.onrender.com/connections/accept/${userId}`, {
             method: "POST",
             headers: { Authorization: "Bearer " + token }
         })
@@ -104,7 +104,7 @@ function handleAccept(userId, notificationId) {
 
 function handleReject(userId, notificationId) {
     deleteNotification(notificationId, () => {
-        fetch(`http://localhost:5000/connections/reject/${userId}`, {
+        fetch(`http://socialportfolio-backend.onrender.com/connections/reject/${userId}`, {
             method: "POST",
             headers: { Authorization: "Bearer " + token }
         })
@@ -120,14 +120,14 @@ function handleReject(userId, notificationId) {
 
 
 function markNotificationsRead() {
-    fetch("http://localhost:5000/notifications/read", {
+    fetch("http://socialportfolio-backend.onrender.com/notifications/read", {
         method: "POST",
         headers: { Authorization: "Bearer " + token }
     });
 }
 
 function deleteNotification(notificationId, callback) {
-    fetch(`http://localhost:5000/notifications/${notificationId}`, {
+    fetch(`http://socialportfolio-backend.onrender.com/notifications/${notificationId}`, {
         method: "DELETE",
         headers: { Authorization: "Bearer " + token }
     })

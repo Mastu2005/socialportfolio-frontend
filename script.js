@@ -33,7 +33,7 @@ async function getMyId() {
     if (!token) return null;
 
     try {
-        const res = await fetch("http://localhost:5000/me", {
+        const res = await fetch("http://socialportfolio-backend.onrender.com/me", {
             headers: {
                 "Authorization": "Bearer " + token
             }
@@ -54,7 +54,7 @@ async function getMyId() {
 async function loadUsers() {
     myUserId = await getMyId();
 
-    const res = await fetch("http://localhost:5000/users");
+    const res = await fetch("http://socialportfolio-backend.onrender.com/users");
     const data = await res.json();
 
     if (!data.success) return;
@@ -96,7 +96,7 @@ let debounceTimer = null;
 async function getMyId() {
     if (!token) return null;
 
-    const res = await fetch("http://localhost:5000/me", {
+    const res = await fetch("http://socialportfolio-backend.onrender.com/me", {
         headers: { Authorization: "Bearer " + token }
     });
     const data = await res.json();
@@ -106,8 +106,8 @@ async function getMyId() {
 // load users (with optional search)
 async function loadUsers(searchText = "") {
     const url = searchText
-        ? `http://localhost:5000/users?search=${encodeURIComponent(searchText)}`
-        : `http://localhost:5000/users`;
+        ? `http://socialportfolio-backend.onrender.com/users?search=${encodeURIComponent(searchText)}`
+        : `http://socialportfolio-backend.onrender.com/users`;
 
     const res = await fetch(url);
     const data = await res.json();

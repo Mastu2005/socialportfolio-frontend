@@ -79,7 +79,7 @@
         async function loadProfile() {
             try {
                 // 1️⃣ PUBLIC PROFILE
-                const userRes = await fetch(`http://localhost:5000/users/${userId}`);
+                const userRes = await fetch(`http://socialportfolio-backend.onrender.com/users/${userId}`);
                 const userData = await userRes.json();
                 if (!userData.success) throw new Error();
 
@@ -114,7 +114,7 @@
                 /* =====================
                 FETCH ME
                 ===================== */
-                const meRes = await fetch("http://localhost:5000/me", {
+                const meRes = await fetch("http://socialportfolio-backend.onrender.com/me", {
                     headers: { Authorization: "Bearer " + token }
                 });
                 const meData = await meRes.json();
@@ -204,7 +204,7 @@
         function sendLike() {
             likeBtn.disabled = true;
 
-            fetch(`http://localhost:5000/like/${userId}`, {
+            fetch(`http://socialportfolio-backend.onrender.com/like/${userId}`, {
                 method: "POST",
                 headers: { Authorization: "Bearer " + token }
             })
@@ -223,7 +223,7 @@
         function sendUnlike() {
             likeBtn.disabled = true;
 
-            fetch(`http://localhost:5000/unlike/${userId}`, {
+            fetch(`http://socialportfolio-backend.onrender.com/unlike/${userId}`, {
                 method: "POST",
                 headers: { Authorization: "Bearer " + token }
             })
@@ -241,7 +241,7 @@
 
         function sendConnectionRequest() {
             connectBtn.disabled = true;
-            fetch(`http://localhost:5000/connections/request/${userId}`, {
+            fetch(`http://socialportfolio-backend.onrender.com/connections/request/${userId}`, {
                 method: "POST",
                 headers: { Authorization: "Bearer " + token }
             })
@@ -259,7 +259,7 @@
         function cancelConnectionRequest() {
             connectBtn.disabled = true;
 
-            fetch(`http://localhost:5000/connections/cancel/${userId}`, {
+            fetch(`http://socialportfolio-backend.onrender.com/connections/cancel/${userId}`, {
                 method: "POST",
                 headers: { Authorization: "Bearer " + token }
             })
@@ -277,7 +277,7 @@
         function disconnectUser() {
             connectBtn.disabled = true;
 
-            fetch(`http://localhost:5000/connections/disconnect/${userId}`, {
+            fetch(`http://socialportfolio-backend.onrender.com/connections/disconnect/${userId}`, {
                 method: "POST",
                 headers: { Authorization: "Bearer " + token }
             })
